@@ -94,7 +94,6 @@ func normalizeString(str string) (normStr string) {
 	return RgxNotNormal.ReplaceAllString(normStr, "")
 }
 
-// TODO fix
 func extractSignatureMessage(canon Canonicalization, headersToExtract []string, rawEmail string) (signatureMessage string, err error) {
 	headers, err := extractHeadersFromEmail(rawEmail)
 	if err != nil {
@@ -106,11 +105,18 @@ func extractSignatureMessage(canon Canonicalization, headersToExtract []string, 
 		for _, headerToExtract := range headersToExtract {
 			headerToExtractVal, _ := headers[headerToExtract]
 			signatureMessage += headerToExtract + ":" + headerToExtractVal
+			if !strings.HasSuffix(signatureMessage, "\r\n") {
+				signatureMessage += "\r\n"
+			}
 		}
 	} else if canon == Relaxed {
 		for _, headerToExtract := range headersToExtract {
 			headerToExtractVal, _ := headers[headerToExtract]
-			signatureMessage += headerToExtract + ":" + headerToExtractVal
+			headerToExtract = strings.ToLower(headerToExtract)
+			headerToExtractVal = RgxConsecSpace.ReplaceAllString(headerToExtractVal, " ")
+			headerToExtractVal = strings.ReplaceAll(headerToExtractVal, "\r\n", "")
+			headerToExtractVal = strings.TrimSpace(headerToExtractVal)
+			signatureMessage += headerToExtract + ":" + headerToExtractVal + "\r\n"
 		}
 	} else {
 		err = fmt.Errorf("unknown canonicalization '%#v' when extracting signature message", canon)

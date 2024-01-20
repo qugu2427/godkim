@@ -16,7 +16,6 @@ func VerifyEmailDKIM(rawEmail string) (err error) {
 	if err != nil {
 		return err
 	}
-	fmt.Sprintf("%v", dkimRecord)
 
 	// Check body hash
 	rawBody, err := extractBody(rawEmail)
@@ -47,7 +46,7 @@ func VerifyEmailDKIM(rawEmail string) (err error) {
 	if err != nil {
 		return
 	}
-	fmt.Println(signatureMessage)
+	// fmt.Printf("%#v\n", signatureMessage)
 	err = checkSignature(dkimHeader.a, dkimRecord.k, dkimRecord.p, []byte(signatureMessage), dkimHeader.b)
 	if err != nil {
 		return

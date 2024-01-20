@@ -282,7 +282,6 @@ func ParseDKIMRecord(txtRecord string) (parsedRecord DKIMDNSRecord, err error) {
 		return
 	}
 	parsedRecord.p, err = parseBase64(p)
-	fmt.Printf("%q\n", parsedRecord.p)
 	if err != nil {
 		return
 	}

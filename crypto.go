@@ -6,7 +6,6 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 )
 
@@ -27,15 +26,20 @@ func computeHash(algo SigningAlgorithm, input []byte) (hash []byte, err error) {
 }
 
 func checkSignature(algo SigningAlgorithm, publicKeyType KeyType, publicKeyRaw, signatureMessage, signature []byte) (err error) {
+	signatureMessageHash, err := computeHash(algo, signatureMessage)
+	if err != nil {
+		return err
+	}
+
 	if publicKeyType == RSA {
 
 		// Parse public key bytes to object
-		block, _ := pem.Decode(publicKeyRaw)
-		if block == nil {
-			err = fmt.Errorf("failed to parse pem data from public key bytes")
-			return
-		}
-		publicKey, _err := x509.ParsePKIXPublicKey(block.Bytes)
+		// block, _ := pem.Decode(publicKeyRaw)
+		// if block == nil {
+		// 	err = fmt.Errorf("failed to parse pem data from public key bytes")
+		// 	return
+		// }
+		publicKey, _err := x509.ParsePKIXPublicKey(publicKeyRaw)
 		if _err != nil {
 			err = _err
 			return
@@ -47,9 +51,9 @@ func checkSignature(algo SigningAlgorithm, publicKeyType KeyType, publicKeyRaw, 
 
 		switch algo {
 		case RSASHA1:
-			err = rsa.VerifyPKCS1v15(rsaPublicKey, crypto.SHA1, signatureMessage, signature)
+			err = rsa.VerifyPKCS1v15(rsaPublicKey, crypto.SHA1, signatureMessageHash, signature)
 		case RSASHA256:
-			err = rsa.VerifyPKCS1v15(rsaPublicKey, crypto.SHA256, signatureMessage, signature)
+			err = rsa.VerifyPKCS1v15(rsaPublicKey, crypto.SHA256, signatureMessageHash, signature)
 		default:
 			err = fmt.Errorf("unknown signing algorithm '%#v'", algo)
 		}
