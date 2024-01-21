@@ -7,7 +7,7 @@ type DKIMDNSRecord struct {
 	h []string    // opt. hash algorithms
 	k KeyType     // opt. (def 'RSA')
 	n string      // opt. notes
-	p []byte      // req. pub key
+	p string      // req. pub key
 	s ServiceType // opt. service type (df 'all')
 	t string      // opt. flags
 }

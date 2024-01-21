@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+/*
+This contains function which parse dkim string values to workable values.
+*/
+
 func parseServiceType(txtServiceType string) (parsedServiceType ServiceType, err error) {
 	txtServiceType = normalizeString(txtServiceType)
 	switch txtServiceType {
@@ -281,10 +285,9 @@ func ParseDKIMRecord(txtRecord string) (parsedRecord DKIMDNSRecord, err error) {
 		err = fmt.Errorf("no public key (p) specified in dkim header")
 		return
 	}
-	parsedRecord.p, err = parseBase64(p)
-	if err != nil {
-		return
-	}
+	p = "-----BEGIN PUBLIC KEY-----\n" + p + "\n-----END PUBLIC KEY-----"
+	// fmt.Printf("%#v\n", p)
+	parsedRecord.p = p
 
 	// Service type (s)
 	s, exists := txtRecordMap["s"]

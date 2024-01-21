@@ -14,4 +14,8 @@ var (
 	RgxNotNormal        *regexp.Regexp = regexp.MustCompile(`[^a-z0-9\-\/]`)
 	RgxNotHeader        *regexp.Regexp = regexp.MustCompile(`[^A-Za-z0-9\-]`)
 	RgxEndColon         *regexp.Regexp = regexp.MustCompile(`^:|:$`)
+	// RgxDkimSigTag       *regexp.Regexp = regexp.MustCompile(`b=[^A-Za-z0-9+/=]{5,}+`)
+	RgxDkimSigTag    *regexp.Regexp = regexp.MustCompile(`b=([A-Za-z0-9+/= \t]+)`)
+	RgxFold          *regexp.Regexp = regexp.MustCompile(`\r\n\s`)
+	RgxEOLWhiteSpace *regexp.Regexp = regexp.MustCompile(`[\t ]\r\n`)
 )

@@ -6,8 +6,14 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"strings"
 )
+
+/*
+This file is for functions which contain crypto related tasks.
+*/
 
 func computeHash(algo SigningAlgorithm, input []byte) (hash []byte, err error) {
 	switch algo {
@@ -25,21 +31,52 @@ func computeHash(algo SigningAlgorithm, input []byte) (hash []byte, err error) {
 	return
 }
 
-func checkSignature(algo SigningAlgorithm, publicKeyType KeyType, publicKeyRaw, signatureMessage, signature []byte) (err error) {
-	signatureMessageHash, err := computeHash(algo, signatureMessage)
+func buildSignatureMessage(dkimHeader DKIMHeader, canonicalizedHeaders string, canonicalization Canonicalization) (signatureMessage string, err error) {
+	if canonicalization == Simple {
+		// todo
+	} else if canonicalization == Relaxed {
+		allHeadersSplit := strings.Split(canonicalizedHeaders, "\r\n")
+		allHeaders := map[string]string{}
+		for _, header := range allHeadersSplit {
+			headerSplit := strings.SplitN(header, ":", 2)
+			if len(headerSplit) == 2 { // mabye catch this err better
+				allHeaders[headerSplit[0]] = headerSplit[1]
+			}
+		}
+		dkimHeader.h = append(dkimHeader.h, "dkim-signature")
+		for _, header := range dkimHeader.h {
+			header := strings.ToLower(header)
+			signatureMessage += header + ":" + allHeaders[header] + "\r\n"
+		}
+		signatureMessage = RgxDkimSigTag.ReplaceAllString(signatureMessage, "b=")
+	} else {
+		err = fmt.Errorf("unknown canonicalization '%#v' when building signature message", canonicalization)
+		return
+	}
+	return
+}
+
+func checkSignature(algo SigningAlgorithm,
+	publicKeyType KeyType,
+	publicKeyPem,
+	signatureMessage string,
+	signature []byte) (err error) {
+
+	fmt.Printf("%#v\n", signatureMessage)
+
+	signatureMessageHash, err := computeHash(algo, []byte(signatureMessage))
 	if err != nil {
 		return err
 	}
 
 	if publicKeyType == RSA {
 
-		// Parse public key bytes to object
-		// block, _ := pem.Decode(publicKeyRaw)
-		// if block == nil {
-		// 	err = fmt.Errorf("failed to parse pem data from public key bytes")
-		// 	return
-		// }
-		publicKey, _err := x509.ParsePKIXPublicKey(publicKeyRaw)
+		block, _ := pem.Decode([]byte(publicKeyPem))
+		if block == nil {
+			err = fmt.Errorf("failed to parse pem data from public key bytes")
+			return
+		}
+		publicKey, _err := x509.ParsePKIXPublicKey(block.Bytes)
 		if _err != nil {
 			err = _err
 			return
@@ -55,7 +92,7 @@ func checkSignature(algo SigningAlgorithm, publicKeyType KeyType, publicKeyRaw, 
 		case RSASHA256:
 			err = rsa.VerifyPKCS1v15(rsaPublicKey, crypto.SHA256, signatureMessageHash, signature)
 		default:
-			err = fmt.Errorf("unknown signing algorithm '%#v'", algo)
+			err = fmt.Errorf("unknown rsa signing algorithm '%#v'", algo)
 		}
 	} else {
 		err = fmt.Errorf("unknown public key type '%#v'", publicKeyType)
@@ -63,18 +100,16 @@ func checkSignature(algo SigningAlgorithm, publicKeyType KeyType, publicKeyRaw, 
 	return
 }
 
-func computeBodyHash(algo SigningAlgorithm, canon Canonicalization, rawBody string, bodyTrimLen uint64) (hash []byte, err error) {
-	if canon == Relaxed {
-		rawBody = RgxConsecSpace.ReplaceAllString(rawBody, " ")
-		rawBody = RgxNewLineSpace.ReplaceAllString(rawBody, "\r\n")
-		rawBody = RgxConsecEndingCRLF.ReplaceAllString(rawBody, "\r\n")
-	}
+func computeBodyHash(
+	algo SigningAlgorithm,
+	canon Canonicalization,
+	canonicalizedBody string,
+	bodyTrimLen uint64) (hash []byte, err error) {
 	if bodyTrimLen > 0 {
-		rawBody = rawBody[:bodyTrimLen]
+		canonicalizedBody = canonicalizedBody[:bodyTrimLen]
 	}
-	bodyLen := len(rawBody)
-	if bodyLen > 2 && rawBody[bodyLen-2:] != "\r\n" {
-		rawBody += "\r\n"
+	if !strings.HasSuffix(canonicalizedBody, "\r\n") {
+		canonicalizedBody += "\r\n"
 	}
-	return computeHash(algo, []byte(rawBody))
+	return computeHash(algo, []byte(canonicalizedBody))
 }
