@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"reflect"
+	"time"
+)
 
 type DKIMDNSRecord struct {
 	v string      // rec. dkim version (def 'DKIM1')
@@ -8,8 +11,18 @@ type DKIMDNSRecord struct {
 	k KeyType     // opt. (def 'RSA')
 	n string      // opt. notes
 	p string      // req. pub key
-	s ServiceType // opt. service type (df 'all')
+	s ServiceType // opt. service type (def 'all')
 	t string      // opt. flags
+}
+
+func (d1 DKIMDNSRecord) Equals(d2 DKIMDNSRecord) bool {
+	return d1.v == d2.v &&
+		reflect.DeepEqual(d1, d2) &&
+		d1.k == d2.k &&
+		d1.n == d2.n &&
+		d1.p == d2.p &&
+		d1.s == d2.s &&
+		d1.t == d2.t
 }
 
 type CanonicalizationTuple struct {

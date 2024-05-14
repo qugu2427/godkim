@@ -31,7 +31,14 @@ func computeHash(algo SigningAlgorithm, input []byte) (hash []byte, err error) {
 	return
 }
 
-func buildSignatureMessage(dkimHeader DKIMHeader, canonicalizedHeaders string, canonicalization Canonicalization) (signatureMessage string, err error) {
+// FIXME
+// This is the problem!!!!
+// checkSignature seems to work (mabye more tests)
+// the body hash works so canonicalization is likely not the problem? (although mabye headers???)
+
+// TODO
+// "The DKIM-Signature header field MUST NOT be included in its own h= tag"
+func buildSignatureMessage(dkimHeader *DKIMHeader, canonicalizedHeaders string, canonicalization Canonicalization) (signatureMessage string, err error) {
 	if canonicalization == Simple {
 		// todo
 	} else if canonicalization == Relaxed {
@@ -39,7 +46,7 @@ func buildSignatureMessage(dkimHeader DKIMHeader, canonicalizedHeaders string, c
 		allHeaders := map[string]string{}
 		for _, header := range allHeadersSplit {
 			headerSplit := strings.SplitN(header, ":", 2)
-			if len(headerSplit) == 2 { // mabye catch this err better
+			if len(headerSplit) == 2 { // TODO mabye catch this err better
 				allHeaders[headerSplit[0]] = headerSplit[1]
 			}
 		}
@@ -61,8 +68,6 @@ func checkSignature(algo SigningAlgorithm,
 	publicKeyPem,
 	signatureMessage string,
 	signature []byte) (err error) {
-
-	fmt.Printf("%#v\n", signatureMessage)
 
 	signatureMessageHash, err := computeHash(algo, []byte(signatureMessage))
 	if err != nil {
@@ -102,7 +107,6 @@ func checkSignature(algo SigningAlgorithm,
 
 func computeBodyHash(
 	algo SigningAlgorithm,
-	canon Canonicalization,
 	canonicalizedBody string,
 	bodyTrimLen uint64) (hash []byte, err error) {
 	if bodyTrimLen > 0 {

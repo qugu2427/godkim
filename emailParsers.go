@@ -67,7 +67,8 @@ func getBodyFromEmail(rawEmail string) (rawBody string, err error) {
 	return
 }
 
-// Returns canoniczlized version of email heade & body given canonicalization algorithm tuple
+// Returns canonicazlized version of email heade & body given canonicalization algorithm tuple
+//
 // This function is a pain in the ass
 func CanonicalizeEmail(canonTuple CanonicalizationTuple, rawEmail string) (canonicalizedHeader, canonicalizedBody string, err error) {
 

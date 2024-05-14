@@ -251,6 +251,7 @@ func ParseDKIMRecord(txtRecord string) (parsedRecord DKIMDNSRecord, err error) {
 			err = fmt.Errorf("unsupported dkim version in dns record '%s', expected version to be 'DKIM1'", v)
 			return
 		}
+		parsedRecord.v = strings.ToUpper(v)
 	}
 
 	// Acceptable hash algos (h)
@@ -286,7 +287,6 @@ func ParseDKIMRecord(txtRecord string) (parsedRecord DKIMDNSRecord, err error) {
 		return
 	}
 	p = "-----BEGIN PUBLIC KEY-----\n" + p + "\n-----END PUBLIC KEY-----"
-	// fmt.Printf("%#v\n", p)
 	parsedRecord.p = p
 
 	// Service type (s)
