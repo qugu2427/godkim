@@ -3,9 +3,17 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
+)
+
+var (
+	RgxDKIMDelim *regexp.Regexp = regexp.MustCompile(`;(\s+)`)
+	RgxNotBase64 *regexp.Regexp = regexp.MustCompile(`[^A-Za-z0-9+/=]`) // FIXME why is it like this
+	RgxNotHeader *regexp.Regexp = regexp.MustCompile(`[^A-Za-z0-9\-]`)
+	RgxEndColon  *regexp.Regexp = regexp.MustCompile(`^:|:$`)
 )
 
 /*
@@ -110,10 +118,15 @@ func parseTagsToMap(txt string) (txtMap map[string]string, err error) {
 }
 
 func parseHeaderList(headerListTxt string) (headerList []string, err error) {
+	usedHeaders := make(map[string]bool)
 	RgxEndColon.ReplaceAllString(headerListTxt, "")
-	headerList = strings.Split(headerListTxt, ":")
-	for i, header := range headerList {
-		headerList[i] = RgxNotHeader.ReplaceAllString(header, "")
+	headerSplit := strings.Split(headerListTxt, ":")
+	for _, header := range headerSplit {
+		header := RgxNotHeader.ReplaceAllString(header, "")
+		if _, exists := usedHeaders[header]; !exists {
+			usedHeaders[header] = true
+			headerList = append(headerList, header)
+		}
 	}
 	return
 }
@@ -236,7 +249,7 @@ func ParseDKIMHeader(txtHeader string) (parsedHeader DKIMHeader, err error) {
 	return
 }
 
-func ParseDKIMRecord(txtRecord string) (parsedRecord DKIMDNSRecord, err error) {
+func ParseDKIMRecord(txtRecord string) (parsedRecord DKIMRecord, err error) {
 	txtRecordMap, err := parseTagsToMap(txtRecord)
 	if err != nil {
 		return

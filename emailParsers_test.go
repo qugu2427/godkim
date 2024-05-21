@@ -20,6 +20,13 @@ func TestCanonicalizeEmail(t *testing.T) {
 			"a:X\r\nb:Y Z\r\n",
 			" C\r\nD E\r\n",
 		},
+		{
+			Simple,
+			Simple,
+			"A: X\r\nB : Y\t\r\n\tZ  \r\n\r\n C \r\nD \t E\r\n\r\n\r\n",
+			"A: X\r\nB : Y\t\r\n\tZ  \r\n",
+			" C \r\nD \t E\r\n",
+		},
 	}
 
 	for _, test := range tests {

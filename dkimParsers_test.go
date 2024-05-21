@@ -5,12 +5,12 @@ import "testing"
 func TestParseDKIMRecord(t *testing.T) {
 	type test struct {
 		txtRecord      string
-		expectedRecord DKIMDNSRecord
+		expectedRecord DKIMRecord
 	}
 	tests := []test{
 		{
 			"v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiB9xMzToz+El7oDglrlHbZk7Tmz0cfxNPR5nzZSAeKBWlH7DMt/FiVGE8C2Qhgrqad3OMAddixm9s4UyztMWj5rXqIy0IK+ALH5JdVCPuNAXHHLXF1B4QizNj6PKVVcAJ6hnvuslV7hKDv4+9zUVJa2FSrgrEUEockpSmN6cJB2qWlef6xYKN1IEDCg/4Q8OmDiiu5RaB+lzFDrAE9vTrKKa58Ms8QcX4TRF1f9kzVvrpEMGdOk6d6v0Zmva/bLV0Hr/79keJZuDOa1KQp/KQVDssHVuPAuwVG6PSO6AwT7DWPcMoUPJm5moIMbIo2/ldg9BsTUW4DWBGZfG85q55QIDAQAB",
-			DKIMDNSRecord{
+			DKIMRecord{
 				v: "DKIM1",
 				h: nil,
 				k: RSA,

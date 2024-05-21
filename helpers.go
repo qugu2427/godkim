@@ -3,35 +3,33 @@ package main
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
+)
+
+var (
+	RgxDKIMRecord *regexp.Regexp = regexp.MustCompile(`^v=DKIM`)
+	RgxNotNormal  *regexp.Regexp = regexp.MustCompile(`[^a-z0-9\-\/]`)
 )
 
 /*
 This file contains misc function which dont fit anywhere else.
 */
 
-func fetchDKIMRecord(selector, domain string) (dkimRecord DKIMDNSRecord, err error) {
+func fetchDKIMRecord(selector, domain string) (dkimRecord DKIMRecord, err error) {
 	dkimDomain := selector + "._domainkey." + domain
 	txtRecords, err := net.LookupTXT(dkimDomain)
-	foundDKIMRecord := false
 	if err != nil {
 		return
 	} else {
 		for _, txtRecord := range txtRecords {
 			if RgxDKIMRecord.MatchString(txtRecord) {
-				if foundDKIMRecord {
-					err = fmt.Errorf("more than one dkim record found for %s", domain)
-					return
-				} else {
-					dkimRecord, err = ParseDKIMRecord(txtRecord)
-					foundDKIMRecord = true
-				}
+				dkimRecord, err = ParseDKIMRecord(txtRecord)
+				return
 			}
 		}
 	}
-	if !foundDKIMRecord {
-		err = fmt.Errorf("no dkim record found for %s", dkimDomain)
-	}
+	err = fmt.Errorf("no dkim record found for '%s'", dkimDomain)
 	return
 }
 

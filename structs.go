@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type DKIMDNSRecord struct {
+type DKIMRecord struct {
 	v string      // rec. dkim version (def 'DKIM1')
 	h []string    // opt. hash algorithms
 	k KeyType     // opt. (def 'RSA')
@@ -15,7 +15,7 @@ type DKIMDNSRecord struct {
 	t string      // opt. flags
 }
 
-func (d1 DKIMDNSRecord) Equals(d2 DKIMDNSRecord) bool {
+func (d1 DKIMRecord) Equals(d2 DKIMRecord) bool {
 	return d1.v == d2.v &&
 		reflect.DeepEqual(d1, d2) &&
 		d1.k == d2.k &&

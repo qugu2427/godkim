@@ -21,7 +21,7 @@ const rawEmail string = "Received: by mail-oo1-f42.google.com with SMTP id 006d0
 
 func main() {
 	// fmt.Println(rawEmail)
-	//fmt.Println(VerifyEmailDKIM(rawEmail))
+	fmt.Println(VerifyEmail(rawEmail))
 
 	// var testSigMsg = `date:Fri, 19 Jan 2024 02:44:51 +0000\r\nto:\"admin@llillii.li\" <admin@llillii.li>\r\nfrom:qugu2427 <qugu2427@proton.me>\r\nsubject:Test\r\nmessage-id:<DhrC06ISvjenM5t098NtiLKIHVRz8YNp_dGeBoNV9OBNOcRl_ZbKLbNUTwm_za05eHn35kZ7K3elYDnCd_fIurFK6ryYdK3z4EzM7H2bmKI=@proton.me>\r\nfeedback-id:85942582:user:proton\r\nfrom:qugu2427 <qugu2427@proton.me>\r\nto:\"admin@llillii.li\" <admin@llillii.li>\r\ncc:\r\ndate:Fri, 19 Jan 2024 02:44:51 +0000\r\nsubject:Test\r\nreply-to:\r\nfeedback-id:85942582:user:proton\r\nmessage-id:<DhrC06ISvjenM5t098NtiLKIHVRz8YNp_dGeBoNV9OBNOcRl_ZbKLbNUTwm_za05eHn35kZ7K3elYDnCd_fIurFK6ryYdK3z4EzM7H2bmKI=@proton.me>\r\nbimi-selector:\r\ndkim-signature:v=1; a=rsa-sha256; c=relaxed/relaxed; d=proton.me;\ts=protonmail; t=1705632310; x=1705891510;\tbh=bgiK6lNfK6S+lYdqzqW4CXkAgkNAZMNne+zmC2MmpI8=;\th=Date:To:From:Subject:Message-ID:Feedback-ID:From:To:Cc:Date: Subject:Reply-To:Feedback-ID:Message-ID:BIMI-Selector;\tb=\r\n`
 
@@ -41,29 +41,39 @@ func main() {
 
 	// fmt.Printf("--------------------\nRESULT: %#v\n--------------------\n", VerifyEmail(rawEmail))
 
-	dkimHeader, err := getDKIMHeaderFromEmail(rawEmail)
-	if err != nil {
-		panic(err)
-	}
-	dkimRecord, err := fetchDKIMRecord(dkimHeader.s, dkimHeader.d)
-	if err != nil {
-		panic(err)
-	}
+	// dkimHeader, err := extractDKIMHeader(rawEmail)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// dkimRecord, err := fetchDKIMRecord(dkimHeader.s, dkimHeader.d)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	canonHeaders, _, err := CanonicalizeEmail(dkimHeader.c, rawEmail)
-	if err != nil {
-		panic(err)
-	}
+	// canonHeaders, canonBody, err := CanonicalizeEmail(dkimHeader.c, rawEmail)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	sigMsg, err := buildSignatureMessage(&dkimHeader, canonHeaders, dkimHeader.c.headerCanon)
-	if err != nil {
-		panic(err)
-	}
-	sigMsg = "to:admin@llillii.li\r\nsubject:fwe\r\nmessage-id:<CAKDWnjcP=VPDcRZ_BS_J6QSg01nF-7gwUevNz7mNP6Hremb3NA@mail.gmail.com>\r\ndate:Mon, 15 Jan 2024 23:15:58 +0000\r\nfrom:Quinn Guerin <Quinn.Guerin@colorado.edu>\r\nreply-to:Quinn.Guerin@colorado.edu\r\nmime-version:1.0\r\nfrom:Quinn Guerin <Quinn.Guerin@colorado.edu>\r\nto:admin@llillii.li\r\ncc:\r\nsubject:fwe\r\ndate:Mon, 15 Jan 2024 23:15:58 +0000\r\nmessage-id:<CAKDWnjcP=VPDcRZ_BS_J6QSg01nF-7gwUevNz7mNP6Hremb3NA@mail.gmail.com>\r\nreply-to:Quinn.Guerin@colorado.edu\r\ndkim-signature:v=1; a=rsa-sha256; c=relaxed/relaxed; d=colorado.edu; s=google; t=1705360569; x=1705965369; darn=llillii.li; bh=tfDE7NK8oIhTax07knTNmwC8mQFtGDhL/Zt6ZU9sOLs=; b="
-	fmt.Printf("%#v\n", sigMsg)
+	// err = dkimHeader.VerifyBodyHash(canonBody)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	err = checkSignature(dkimHeader.a, dkimRecord.k, dkimRecord.p, sigMsg, dkimHeader.b)
-	if err != nil {
-		panic(err)
-	}
+	// sigMsg, err := buildSignatureMessage(&dkimHeader, canonHeaders, dkimHeader.c.headerCanon)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// // sigMsg = "to:admin@llillii.li\r\nsubject:fwe\r\nmessage-id:<CAKDWnjcP=VPDcRZ_BS_J6QSg01nF-7gwUevNz7mNP6Hremb3NA@mail.gmail.com>\r\ndate:Mon, 15 Jan 2024 23:15:58 +0000\r\nfrom:Quinn Guerin <Quinn.Guerin@colorado.edu>\r\nreply-to:Quinn.Guerin@colorado.edu\r\nmime-version:1.0\r\nfrom:Quinn Guerin <Quinn.Guerin@colorado.edu>\r\nto:admin@llillii.li\r\ncc:\r\nsubject:fwe\r\ndate:Mon, 15 Jan 2024 23:15:58 +0000\r\nmessage-id:<CAKDWnjcP=VPDcRZ_BS_J6QSg01nF-7gwUevNz7mNP6Hremb3NA@mail.gmail.com>\r\nreply-to:Quinn.Guerin@colorado.edu\r\ndkim-signature:v=1; a=rsa-sha256; c=relaxed/relaxed; d=colorado.edu; s=google; t=1705360569; x=1705965369; darn=llillii.li; bh=tfDE7NK8oIhTax07knTNmwC8mQFtGDhL/Zt6ZU9sOLs=; b="
+	// // sigMsg += canonBody
+	// // sigMsg = "to:admin@llillii.li\r\nsubject:fwe\r\nmessage-id:<CAKDWnjcP=VPDcRZ_BS_J6QSg01nF-7gwUevNz7mNP6Hremb3NA@mail.gmail.com>\r\ndate:Mon, 15 Jan 2024 23:15:58 +0000\r\nfrom:Quinn Guerin <Quinn.Guerin@colorado.edu>\r\nreply-to:Quinn.Guerin@colorado.edu\r\nmime-version:1.0\r\ndkim-signature:v=1; a=rsa-sha256; c=relaxed/relaxed; d=colorado.edu; s=google; t=1705360569; x=1705965369; darn=llillii.li; h=to:subject:message-id:date:from:reply-to:mime-version:from:to:cc :subject:date:message-id:reply-to; bh=tfDE7NK8oIhTax07knTNmwC8mQFtGDhL/Zt6ZU9sOLs=; b="
+
+	// fmt.Printf("%#v\n", dkimHeader.h)
+	// fmt.Printf("%#v\n", sigMsg)
+
+	// err = checkSignature(dkimHeader.a, dkimRecord.k, dkimRecord.p, sigMsg, dkimHeader.b)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println("HOLY FUCKING SHIT IT VERIFIED")
 }

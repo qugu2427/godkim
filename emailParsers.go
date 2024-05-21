@@ -2,7 +2,15 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
+)
+
+var (
+	RgxEmailBodyEnd     *regexp.Regexp = regexp.MustCompile(`\r\n.\r\n$`)
+	RgxConsecEndingCRLF *regexp.Regexp = regexp.MustCompile(`(\r\n){2,}$`)
+	RgxConsecSpace      *regexp.Regexp = regexp.MustCompile(`[ \t]{2,}`)
+	RgxEOLWhiteSpace    *regexp.Regexp = regexp.MustCompile(`[\t ]\r\n`)
 )
 
 /*
@@ -10,7 +18,7 @@ This file is for function which help to parse information from a raw email.
 */
 
 // Returns string map of headers given a raw email
-func getHeadersFromEmail(rawEmail string) (headers map[string]string, err error) {
+func extractHeaders(rawEmail string) (headers map[string]string, err error) {
 	headersEndpoint := strings.Index(rawEmail, "\r\n\r\n")
 	if headersEndpoint == -1 {
 		err = fmt.Errorf("unable to find find end of headers section")
@@ -37,8 +45,8 @@ func getHeadersFromEmail(rawEmail string) (headers map[string]string, err error)
 }
 
 // Returns a dkim header object given a raw email
-func getDKIMHeaderFromEmail(rawEmail string) (dkimHeader DKIMHeader, err error) {
-	headers, err := getHeadersFromEmail(rawEmail)
+func extractDKIMHeader(rawEmail string) (dkimHeader DKIMHeader, err error) {
+	headers, err := extractHeaders(rawEmail)
 	if err != nil {
 		return
 	}
@@ -52,7 +60,7 @@ func getDKIMHeaderFromEmail(rawEmail string) (dkimHeader DKIMHeader, err error) 
 }
 
 // Returns raw body portion of raw email
-func getBodyFromEmail(rawEmail string) (rawBody string, err error) {
+func extractBody(rawEmail string) (rawBody string, err error) {
 	rawEmailSplit := strings.SplitN(rawEmail, "\r\n\r\n", 2)
 	if len(rawEmailSplit) != 2 {
 		err = fmt.Errorf("unable to extract body from email")
@@ -67,13 +75,13 @@ func getBodyFromEmail(rawEmail string) (rawBody string, err error) {
 	return
 }
 
-// Returns canonicazlized version of email heade & body given canonicalization algorithm tuple
+// Returns canonicazlized version of email head & body given canonicalization algorithm tuple
 //
 // This function is a pain in the ass
 func CanonicalizeEmail(canonTuple CanonicalizationTuple, rawEmail string) (canonicalizedHeader, canonicalizedBody string, err error) {
 
 	// Canoicalize headers
-	headers, err := getHeadersFromEmail(rawEmail)
+	headers, err := extractHeaders(rawEmail)
 	if err != nil {
 		err = fmt.Errorf("unable to extract headers from email (%s)", err)
 		return
@@ -112,7 +120,7 @@ func CanonicalizeEmail(canonTuple CanonicalizationTuple, rawEmail string) (canon
 	}
 
 	// Canonicalize body
-	body, err := getBodyFromEmail(rawEmail)
+	body, err := extractBody(rawEmail)
 	if err != nil {
 		err = fmt.Errorf("unable to extract body from email (%s)", err)
 		return
