@@ -36,14 +36,7 @@ func computeHash(algo SigningAlgorithm, input []byte) (hash []byte, err error) {
 	return
 }
 
-// FIXME
-// This is the problem!!!!
-// checkSignature seems to work (mabye more tests)
-// the body hash works so canonicalization is likely not the problem? (although mabye headers???)
-
-// TODO
-// "The DKIM-Signature header field MUST NOT be included in its own h= tag"
-//
+// TODO FIXME
 func buildSignatureMessage(dkimHeader *DKIMHeader, canonicalizedHeaders string, canonicalization Canonicalization) (signatureMessage string, err error) {
 	if canonicalization == Simple {
 		// todo
