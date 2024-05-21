@@ -43,7 +43,6 @@ func computeHash(algo SigningAlgorithm, input []byte) (hash []byte, err error) {
 
 // TODO
 // "The DKIM-Signature header field MUST NOT be included in its own h= tag"
-
 //
 func buildSignatureMessage(dkimHeader *DKIMHeader, canonicalizedHeaders string, canonicalization Canonicalization) (signatureMessage string, err error) {
 	if canonicalization == Simple {

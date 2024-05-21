@@ -60,43 +60,110 @@ func (d *DKIMHeader) VerifySignature(dkimRecord DKIMRecord, canonicalizedHeaders
 	return
 }
 
-func VerifyEmail(rawEmail string) (err error) {
-	dkimHeader, err := extractDKIMHeader(rawEmail)
+type VerifyResult struct {
+	Result VerificationResult
+	Err    error
+	Domain string
+}
+
+func Verify(rawMail string) (results []VerifyResult, err error) {
+	dkimHeaders, err := extractDKIMHeaders(rawEmail)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, dkimHeader := range dkimHeaders {
+		var result VerifyResult
+		result.Domain = dkimHeader.d
+
+		var dkimRecord DKIMRecord
+		dkimRecord, err = fetchDKIMRecord(dkimHeader.s, dkimHeader.d)
+		if err != nil {
+			result.Err = err
+			result.Result = TempFail
+		}
+
+		// Check timestamp and expiration
+		err = dkimHeader.VerifyTimestamp()
+		if err != nil {
+			result.Err = err
+			result.Result = PermFail
+		}
+		err = dkimHeader.VerifyExpiration()
+		if err != nil {
+			result.Err = err
+			result.Result = PermFail
+		}
+
+		// Canonicalize email
+		var headersCanonicalized, bodyCanonicalized string
+		headersCanonicalized, bodyCanonicalized, err = CanonicalizeEmail(dkimHeader.c, rawEmail)
+		if err != nil {
+			result.Err = err
+			result.Result = PermFail
+		}
+
+		// Check body hash
+		err = dkimHeader.VerifyBodyHash(bodyCanonicalized)
+		if err != nil {
+			result.Err = err
+			result.Result = PermFail
+		}
+
+		// Check signature
+		err = dkimHeader.VerifySignature(dkimRecord, headersCanonicalized)
+		if err != nil {
+			result.Err = err
+			result.Result = PermFail
+		}
+
+		results = append(results, result)
+	}
+
+	return
+}
+
+func VerifySimple(rawMail string) (err error) {
+	dkimHeaders, err := extractDKIMHeaders(rawEmail)
 	if err != nil {
 		return err
 	}
 
-	dkimRecord, err := fetchDKIMRecord(dkimHeader.s, dkimHeader.d)
-	if err != nil {
-		return err
-	}
+	for _, dkimHeader := range dkimHeaders {
+		var dkimRecord DKIMRecord
+		dkimRecord, err = fetchDKIMRecord(dkimHeader.s, dkimHeader.d)
+		if err != nil {
+			return
+		}
 
-	// Check timestamp and expiration
-	err = dkimHeader.VerifyTimestamp()
-	if err != nil {
-		return
-	}
-	err = dkimHeader.VerifyExpiration()
-	if err != nil {
-		return
-	}
+		// Check timestamp and expiration
+		err = dkimHeader.VerifyTimestamp()
+		if err != nil {
+			return
+		}
+		err = dkimHeader.VerifyExpiration()
+		if err != nil {
+			return
+		}
 
-	// Canonicalize email
-	headersCanonicalized, bodyCanonicalized, err := CanonicalizeEmail(dkimHeader.c, rawEmail)
-	if err != nil {
-		return
-	}
+		// Canonicalize email
+		var headersCanonicalized, bodyCanonicalized string
+		headersCanonicalized, bodyCanonicalized, err = CanonicalizeEmail(dkimHeader.c, rawEmail)
+		if err != nil {
+			return
+		}
 
-	// Check body hash
-	err = dkimHeader.VerifyBodyHash(bodyCanonicalized)
-	if err != nil {
-		return
-	}
+		// Check body hash
+		err = dkimHeader.VerifyBodyHash(bodyCanonicalized)
+		if err != nil {
+			return
+		}
 
-	// Check signature
-	err = dkimHeader.VerifySignature(dkimRecord, headersCanonicalized)
-	if err != nil {
-		return
+		// Check signature
+		err = dkimHeader.VerifySignature(dkimRecord, headersCanonicalized)
+		if err != nil {
+			return
+		}
 	}
 
 	return

@@ -18,7 +18,7 @@ This file is for function which help to parse information from a raw email.
 */
 
 // Returns string map of headers given a raw email
-func extractHeaders(rawEmail string) (headers map[string]string, err error) {
+func extractHeaders(rawEmail string) (headers map[string][]string, err error) {
 	headersEndpoint := strings.Index(rawEmail, "\r\n\r\n")
 	if headersEndpoint == -1 {
 		err = fmt.Errorf("unable to find find end of headers section")
@@ -26,36 +26,44 @@ func extractHeaders(rawEmail string) (headers map[string]string, err error) {
 	}
 	headerPortion := rawEmail[:headersEndpoint]
 	headerLines := strings.Split(headerPortion, "\r\n")
-	headers = map[string]string{}
 	currentHeader := ""
+	headers = map[string][]string{}
 	for _, headerLine := range headerLines {
 		if (headerLine[0] == '\t' || headerLine[0] == ' ') && len(headerLine) > 1 {
-			if _, exists := headers[currentHeader]; !exists {
-				err = fmt.Errorf("unable to parse header")
+			if _, exists := headers[currentHeader]; !exists || len(headers[currentHeader]) == 0 {
+				err = fmt.Errorf("unable to parse header line %#v", headerLine)
 				return
 			}
-			headers[currentHeader] += "\r\n" + headerLine
+			headers[currentHeader][len(headers[currentHeader])-1] += "\r\n" + headerLine
 		} else if strings.Contains(headerLine, ":") {
 			headerLineSplit := strings.SplitN(headerLine, ":", 2)
 			currentHeader = RgxNotHeader.ReplaceAllString(headerLineSplit[0], "")
-			headers[currentHeader] = strings.TrimSpace(headerLineSplit[1])
+			headers[currentHeader] = append(headers[currentHeader], "")
+			headers[currentHeader][len(headers[currentHeader])-1] = strings.TrimSpace(headerLineSplit[1])
 		}
 	}
 	return
 }
 
-// Returns a dkim header object given a raw email
-func extractDKIMHeader(rawEmail string) (dkimHeader DKIMHeader, err error) {
+// Returns a dkim header objects given a raw email
+func extractDKIMHeaders(rawEmail string) (dkimHeaders []DKIMHeader, err error) {
 	headers, err := extractHeaders(rawEmail)
 	if err != nil {
 		return
 	}
-	dkimHeaderTxt, exists := headers["DKIM-Signature"]
-	if !exists || dkimHeaderTxt == "" {
+	dkimHeaderVals, exists := headers["DKIM-Signature"]
+	if !exists {
 		err = fmt.Errorf("dkim header not found")
 		return
 	}
-	dkimHeader, err = ParseDKIMHeader(dkimHeaderTxt)
+	for _, dkimHeaderTxt := range dkimHeaderVals {
+		var dkimHeader DKIMHeader
+		dkimHeader, err = ParseDKIMHeader(dkimHeaderTxt)
+		if err != nil {
+			return
+		}
+		dkimHeaders = append(dkimHeaders, dkimHeader)
+	}
 	return
 }
 
@@ -88,31 +96,43 @@ func CanonicalizeEmail(canonTuple CanonicalizationTuple, rawEmail string) (canon
 	}
 	if canonTuple.headerCanon == Simple {
 		// "The "simple" header canonicalization algorithm does not change header fields in any way"
-		for _, header := range headers {
-			canonicalizedHeader += header + ":" + headers[header]
-			if !strings.HasSuffix(canonicalizedHeader, "\r\n") {
-				canonicalizedHeader += "\r\n"
+		for headerKey, headerVals := range headers {
+			for _, headerVal := range headerVals {
+				canonicalizedHeader += headerKey + ":" + headerVal
+				if !strings.HasSuffix(canonicalizedHeader, "\r\n") {
+					canonicalizedHeader += "\r\n"
+				}
 			}
 		}
 	} else if canonTuple.headerCanon == Relaxed {
-		for header, headerVal := range headers {
+		for headerKey, headerVals := range headers {
+			for _, headerVal := range headerVals {
+				// "Convert all header field names (not the header field values) tolowercase."
+				headerKey = strings.ToLower(headerKey)
 
-			// "Convert all header field names (not the header field values) tolowercase."
-			header = strings.ToLower(header)
+				// "Convert all header field names (not the header field values) tolowercase."
+				headerKey = strings.ToLower(headerKey)
 
-			// "Unfold all header field continuation lines"
-			headerVal = unfoldString(headerVal)
+				// "Convert all header field names (not the header field values) tolowercase."
+				headerKey = strings.ToLower(headerKey)
 
-			// "Convert all sequences of one or more WSP characters to a single SP"
-			headerVal = RgxConsecSpace.ReplaceAllString(headerVal, " ")
+				// "Convert all header field names (not the header field values) tolowercase."
+				headerKey = strings.ToLower(headerKey)
 
-			// "Delete all WSP characters at the end of each unfolded header field value"
-			headerVal = RgxEOLWhiteSpace.ReplaceAllString(headerVal, "\r\n")
+				// "Unfold all header field continuation lines"
+				headerVal = unfoldString(headerVal)
 
-			// "Delete any WSP characters remaining before and after the colon separating the header field name from the header field value."
-			headerVal = strings.TrimSpace(headerVal)
+				// "Convert all sequences of one or more WSP characters to a single SP"
+				headerVal = RgxConsecSpace.ReplaceAllString(headerVal, " ")
 
-			canonicalizedHeader += header + ":" + headerVal + "\r\n"
+				// "Delete all WSP characters at the end of each unfolded header field value"
+				headerVal = RgxEOLWhiteSpace.ReplaceAllString(headerVal, "\r\n")
+
+				// "Delete any WSP characters remaining before and after the colon separating the header field name from the header field value."
+				headerVal = strings.TrimSpace(headerVal)
+
+				canonicalizedHeader += headerKey + ":" + headerVal + "\r\n"
+			}
 		}
 	} else {
 		err = fmt.Errorf("unknown header canonicalization '%#v'", canonTuple.headerCanon)

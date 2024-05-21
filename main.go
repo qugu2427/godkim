@@ -21,7 +21,7 @@ const rawEmail string = "Received: by mail-oo1-f42.google.com with SMTP id 006d0
 
 func main() {
 	// fmt.Println(rawEmail)
-	fmt.Println(VerifyEmail(rawEmail))
+	fmt.Println(Verify(rawEmail))
 
 	// var testSigMsg = `date:Fri, 19 Jan 2024 02:44:51 +0000\r\nto:\"admin@llillii.li\" <admin@llillii.li>\r\nfrom:qugu2427 <qugu2427@proton.me>\r\nsubject:Test\r\nmessage-id:<DhrC06ISvjenM5t098NtiLKIHVRz8YNp_dGeBoNV9OBNOcRl_ZbKLbNUTwm_za05eHn35kZ7K3elYDnCd_fIurFK6ryYdK3z4EzM7H2bmKI=@proton.me>\r\nfeedback-id:85942582:user:proton\r\nfrom:qugu2427 <qugu2427@proton.me>\r\nto:\"admin@llillii.li\" <admin@llillii.li>\r\ncc:\r\ndate:Fri, 19 Jan 2024 02:44:51 +0000\r\nsubject:Test\r\nreply-to:\r\nfeedback-id:85942582:user:proton\r\nmessage-id:<DhrC06ISvjenM5t098NtiLKIHVRz8YNp_dGeBoNV9OBNOcRl_ZbKLbNUTwm_za05eHn35kZ7K3elYDnCd_fIurFK6ryYdK3z4EzM7H2bmKI=@proton.me>\r\nbimi-selector:\r\ndkim-signature:v=1; a=rsa-sha256; c=relaxed/relaxed; d=proton.me;\ts=protonmail; t=1705632310; x=1705891510;\tbh=bgiK6lNfK6S+lYdqzqW4CXkAgkNAZMNne+zmC2MmpI8=;\th=Date:To:From:Subject:Message-ID:Feedback-ID:From:To:Cc:Date: Subject:Reply-To:Feedback-ID:Message-ID:BIMI-Selector;\tb=\r\n`
 

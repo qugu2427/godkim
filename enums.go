@@ -1,5 +1,26 @@
 package main
 
+type VerificationResult uint8
+
+const (
+	Success VerificationResult = iota
+	PermFail
+	TempFail
+)
+
+func (v VerificationResult) String() string {
+	switch v {
+	case Success:
+		return "Success"
+	case PermFail:
+		return "PermFail"
+	case TempFail:
+		return "TempFail"
+	default:
+		panic("unknown verification result")
+	}
+}
+
 type SigningAlgorithm uint8
 
 const (
