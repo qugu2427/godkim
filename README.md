@@ -2,33 +2,31 @@
 A go module for verifying email with DKIM as described by RFC 6376.
 **WORK IN PROGRESS**
 
-## Verification
-There are two methods that can perform verification `SimpleVerify()` and `Verify()`. Both methods take a single raw mail body as a string argument. 
+## Verify
+`Verify()` returns a slice of verifications results with one result for each signature. Verify also returns an error when verification has failed.
 
 Example Mail:
 ```go
-/*
-IMPORTANT NOTE!
-The email must be in its completely raw form!
-(including \r \n \t etc)
-*/
-rawEmail := ""
-```
+package main
 
-### Detailed Verify
-`Verify()` returns a slice of verifications results with one result for each signature. Verify also returns an error when verification has failed.
-
-Example:
-```go
-results, err := dkim.Verify(rawEmail)
-if err != nil {
-    fmt.Println("DKIM verification failed! (%s)", err)
-} else {
-    fmt.Println("DKIM Verified!")
-}
-
-for i, result := range results {
-    fmt.Prinf("Dkim Header #%d: res=%s err=%s domain=%s\n", i, result.Result, result.Err, result.Domain)
+func main() {
+    /*
+    IMPORTANT NOTE!
+    The email must be in its completely raw form!
+    (including \r \n \t etc)
+    */
+    rawEmail := ""
+    
+    results, err := dkim.Verify(rawEmail)
+    if err != nil {
+        fmt.Println("DKIM verification failed! (%s)", err)
+    } else {
+        fmt.Println("DKIM Verified!")
+    }
+    
+    for i, result := range results {
+        fmt.Prinf("Dkim Header #%d: res=%s err=%s domain=%s\n", i, result.Result, result.Err, result.Domain)
+    }
 }
 ```
 
