@@ -38,9 +38,9 @@ type DKIMHeader struct {
 	c  CanonicalizationTuple // opt. def simple/simple message canonicalization
 	d  string                // req. domain of sender
 	h  []string              // req. headers used to create signature
-	i  string                // opt. todo
-	l  uint64                // opt. body len count
-	q  string                // opt. query method always dns/txt
+	i  string                // opt. agent
+	l  int                   // opt. body len count
+	q  string                // opt. query method always dns/txt (UNUSED)
 	s  string                // req. selector
 	t  time.Time             // rec. signature timestamp
 	x  time.Time             // rec. signature expiration

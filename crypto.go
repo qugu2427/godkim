@@ -38,6 +38,7 @@ func computeHash(algo SigningAlgorithm, input []byte) (hash []byte, err error) {
 
 // TODO FIXME
 func buildSignatureMessage(dkimHeader *DKIMHeader, canonicalizedHeaders string, canonicalization Canonicalization) (signatureMessage string, err error) {
+	fromSigned := false
 	if canonicalization == Simple {
 		// todo
 	} else if canonicalization == Relaxed {
@@ -56,6 +57,9 @@ func buildSignatureMessage(dkimHeader *DKIMHeader, canonicalizedHeaders string, 
 		dkimHeader.h = append(dkimHeader.h, "dkim-signature")
 		for _, header := range dkimHeader.h {
 			header := strings.ToLower(header)
+			if header == "from" {
+				fromSigned = true
+			}
 			if allHeaders[header] != "" {
 				signatureMessage += header + ":" + allHeaders[header] + "\r\n" // "Each header field MUST be terminated with a single CRLF."
 			}
@@ -69,6 +73,9 @@ func buildSignatureMessage(dkimHeader *DKIMHeader, canonicalizedHeaders string, 
 	} else {
 		err = fmt.Errorf("unknown canonicalization '%#v' when building signature message", canonicalization)
 		return
+	}
+	if !fromSigned {
+		err = fmt.Errorf("from header not included in signature")
 	}
 	return
 }

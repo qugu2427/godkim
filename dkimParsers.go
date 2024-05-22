@@ -210,7 +210,39 @@ func ParseDKIMHeader(txtHeader string) (parsedHeader DKIMHeader, err error) {
 		return
 	}
 
-	// POSSIBLE TODO ignoring i,l,q since they are optional
+	// Agent (i)
+	// this isnt used other than checking it against d
+	i, exists := txtHeaderMap["i"]
+	if exists {
+		iSplit := strings.Split(i, "@")
+		if len(iSplit) == 2 {
+			err = fmt.Errorf("invalid agent (i) not in form local@domain")
+			return
+		}
+		if !strings.HasSuffix(iSplit[1], parsedHeader.d) {
+			if len(iSplit) == 2 {
+				err = fmt.Errorf("agent (i) %s not a subdomain of %s", iSplit[1], parsedHeader.d)
+				return
+			}
+		}
+		parsedHeader.i = i
+	}
+
+	// Body Length Count (l)
+	l, exists := txtHeaderMap["i"]
+	if exists {
+		lNum, _err := strconv.Atoi(l)
+		if _err != nil {
+			err = _err
+			return
+		}
+		if lNum < 1 {
+			err = fmt.Errorf("body length count (l) less than 1")
+		}
+		parsedHeader.l = lNum
+	}
+
+	// q is unused since it is always dns/txt
 
 	// Selectors (s)
 	s, exists := txtHeaderMap["s"]
@@ -268,6 +300,7 @@ func ParseDKIMRecord(txtRecord string) (parsedRecord DKIMRecord, err error) {
 	}
 
 	// Acceptable hash algos (h)
+	// TODO: check that this matches a
 	h, exists := txtRecordMap["h"]
 	if exists {
 		parsedRecord.h, err = parseHeaderList(h)
