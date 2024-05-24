@@ -3,7 +3,7 @@ A go module for verifying email with DKIM as described by RFC 6376.
 **WORK IN PROGRESS**
 
 ## Verify
-`Verify()` returns a slice of verifications results with one result for each signature. Verify also returns an error when verification has failed.
+`Verify(rawMail string)` returns a slice of verifications results with one result for each signature. Verify also returns an error when verification has failed.
 
 Example Mail:
 ```go
@@ -31,7 +31,27 @@ func main() {
 ```
 
 ## Signing
-Signing is not yet supported.
+`Sign(signingPayload SigningPayload)` returns signed message in raw form and an error.
+```go
+package main
+
+// tod
+}
+```
+
+## Support
+The following can be checked by `Verify()`, but cannot be used in signing:
+ - `rsa-sha1` signing algorithm
+ - Simple Canonicalization `c=simple/simple`
+ - Patial Signing `l=`
+ - Agent `i=`
+
+The following is not supported:
+ - `z=` header field (ignored on verify)
+ - `q=` header field (ignored/always 'dns/txt')
+ - `ed25519` signing algorithm (not supported YET, but planned feature)
+
+Everything in rfc that is not listed above should be supported.
 
 ## Notes
 - It is up to the sender to correctly sign their emails. If the sender does not properly do this, emails can be spoofed even if DKIM verification passes.

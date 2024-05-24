@@ -11,6 +11,7 @@ var (
 	RgxConsecEndingCRLF *regexp.Regexp = regexp.MustCompile(`(\r\n){2,}$`)
 	RgxConsecSpace      *regexp.Regexp = regexp.MustCompile(`[ \t]{2,}`)
 	RgxEOLWhiteSpace    *regexp.Regexp = regexp.MustCompile(`[\t ]\r\n`)
+	RgxHeaderColon      *regexp.Regexp = regexp.MustCompile(`\s?:\s?`)
 )
 
 /*
@@ -39,10 +40,9 @@ func extractHeaders(rawEmail string) (headers map[string][]string, err error) {
 			headers[currentHeader][len(headers[currentHeader])-1] += "\r\n" + headerLine
 		} else if strings.Contains(headerLine, ":") {
 			headerLineSplit := strings.SplitN(headerLine, ":", 2)
-			// currentHeader = RgxNotHeader.ReplaceAllString(headerLineSplit[0], "")
 			currentHeader = headerLineSplit[0]
 			headers[currentHeader] = append(headers[currentHeader], "")
-			headers[currentHeader][len(headers[currentHeader])-1] = strings.TrimSpace(headerLineSplit[1])
+			headers[currentHeader][len(headers[currentHeader])-1] = headerLineSplit[1]
 		}
 	}
 	return
@@ -137,7 +137,6 @@ func extractSignatureMessage(dkimHeader *DKIMHeader, canonicalizedHeaders string
 //
 // This function is a pain in the ass
 func CanonicalizeEmail(canonTuple CanonicalizationTuple, rawEmail string) (canonicalizedHeader, canonicalizedBody string, err error) {
-
 	// Canoicalize headers
 	headers, err := extractHeaders(rawEmail)
 	if err != nil {
@@ -170,7 +169,8 @@ func CanonicalizeEmail(canonTuple CanonicalizationTuple, rawEmail string) (canon
 				headerVal = RgxEOLWhiteSpace.ReplaceAllString(headerVal, "\r\n")
 
 				// "Delete any WSP characters remaining before and after the colon separating the header field name from the header field value."
-				headerVal = strings.TrimSpace(headerVal)
+				headerKey = strings.TrimSpace(headerKey)
+				headerVal = strings.TrimSpace(headerVal) // BUG triming not specified in rfc but works in test
 
 				canonicalizedHeader += headerKey + ":" + headerVal + "\r\n"
 			}

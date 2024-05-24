@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+var DefaultHeaders []string = []string{"From", "To", "Subject", "Date", "Cc", "Reply-To", "Message-ID"}
+
 type SignPayload struct {
 	RawMail    string
 	Domain     string

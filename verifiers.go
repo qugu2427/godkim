@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	SignatureLimit  int  = 4    // The max number of signatures Verify() will verify
-	CheckExpiration bool = true // Whether or not the check the expiration date on signatures
+	SignatureLimit  int  = 4     // The max number of signatures Verify() will verify
+	CheckExpiration bool = false // Whether or not the check the expiration date on signatures
 )
 
 // Checks that the agent (i=) is a subdomain or matches domain
