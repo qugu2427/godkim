@@ -18,6 +18,8 @@ This file is for function which help to parse information from a raw email.
 */
 
 // Returns string map of headers given a raw email
+//
+// weird function because regexs cant handle lookback, so I casnt split on \r\n\S
 func extractHeaders(rawEmail string) (headers map[string][]string, err error) {
 	headersEndpoint := strings.Index(rawEmail, "\r\n\r\n")
 	if headersEndpoint == -1 {
@@ -37,7 +39,8 @@ func extractHeaders(rawEmail string) (headers map[string][]string, err error) {
 			headers[currentHeader][len(headers[currentHeader])-1] += "\r\n" + headerLine
 		} else if strings.Contains(headerLine, ":") {
 			headerLineSplit := strings.SplitN(headerLine, ":", 2)
-			currentHeader = RgxNotHeader.ReplaceAllString(headerLineSplit[0], "")
+			// currentHeader = RgxNotHeader.ReplaceAllString(headerLineSplit[0], "")
+			currentHeader = headerLineSplit[0]
 			headers[currentHeader] = append(headers[currentHeader], "")
 			headers[currentHeader][len(headers[currentHeader])-1] = strings.TrimSpace(headerLineSplit[1])
 		}
@@ -83,6 +86,53 @@ func extractBody(rawEmail string) (rawBody string, err error) {
 	return
 }
 
+// Returns the headers part of the signature message and the last dkim header (or "" if not present)
+//
+// If signature is found within headers it will append the signature to the signature message
+func extractSignatureMessage(dkimHeader *DKIMHeader, canonicalizedHeaders string) (signatureMessage string, err error) {
+	headers, err := extractHeaders(canonicalizedHeaders + "\r\n")
+	if err != nil {
+		return
+	}
+
+	// "The header fields specified by the "h=" tag, in the order specified in that tag, and canonicalized using the header canonicalization algorithm specified in the "c=" tag"
+	includesFrom := false
+	dkimHeaderVal := ""
+	for _, headerKey := range dkimHeader.h {
+		if strings.ToLower(headerKey) == "from" {
+			includesFrom = true
+		}
+		if headers[headerKey] != nil {
+			headerVal := headers[headerKey][len(headers[headerKey])-1]
+			if headerVal != "" {
+				signatureMessage += headerKey + ":" + headerVal + "\r\n" // "Each header field MUST be terminated with a single CRLF."
+			}
+		}
+	}
+
+	// add the dkim signature to message if it exists
+	signatureKey := "DKIM-Signature"
+	signatures := headers[signatureKey]
+	if signatures == nil {
+		signatureKey = strings.ToLower(signatureKey)
+		signatures = headers[signatureKey]
+	}
+	for _, signatureVal := range signatures {
+		if strings.Contains(signatureVal, dkimHeader.d) {
+			// "header field are included in the cryptographic hash with the sole exception of the value portion of the "b=""
+			dkimHeaderVal = RgxDkimSigTag.ReplaceAllString(signatureVal, "b=")
+			dkimHeaderVal = strings.TrimSuffix(dkimHeaderVal, "\r\n")
+			signatureMessage += signatureKey + ":" + dkimHeaderVal
+		}
+	}
+
+	if !includesFrom {
+		return "", fmt.Errorf("from header not included")
+	}
+
+	return
+}
+
 // Returns canonicazlized version of email head & body given canonicalization algorithm tuple
 //
 // This function is a pain in the ass
@@ -98,24 +148,15 @@ func CanonicalizeEmail(canonTuple CanonicalizationTuple, rawEmail string) (canon
 		// "The "simple" header canonicalization algorithm does not change header fields in any way"
 		for headerKey, headerVals := range headers {
 			for _, headerVal := range headerVals {
-				canonicalizedHeader += headerKey + ":" + headerVal
-				if !strings.HasSuffix(canonicalizedHeader, "\r\n") {
-					canonicalizedHeader += "\r\n"
-				}
+				canonicalizedHeader += headerKey + ":" + headerVal + "\r\n"
+				// if !strings.HasSuffix(canonicalizedHeader, "\r\n") {
+				// 	canonicalizedHeader += "\r\n"
+				// }
 			}
 		}
 	} else if canonTuple.headerCanon == Relaxed {
 		for headerKey, headerVals := range headers {
 			for _, headerVal := range headerVals {
-				// "Convert all header field names (not the header field values) tolowercase."
-				headerKey = strings.ToLower(headerKey)
-
-				// "Convert all header field names (not the header field values) tolowercase."
-				headerKey = strings.ToLower(headerKey)
-
-				// "Convert all header field names (not the header field values) tolowercase."
-				headerKey = strings.ToLower(headerKey)
-
 				// "Convert all header field names (not the header field values) tolowercase."
 				headerKey = strings.ToLower(headerKey)
 

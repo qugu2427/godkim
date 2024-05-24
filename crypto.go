@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -9,7 +10,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"regexp"
-	"strings"
 )
 
 /*
@@ -32,50 +32,6 @@ func computeHash(algo SigningAlgorithm, input []byte) (hash []byte, err error) {
 		hash = h.Sum(nil)
 	default:
 		err = fmt.Errorf("unknown hashing algorithm '%#v'", algo)
-	}
-	return
-}
-
-// TODO FIXME
-func buildSignatureMessage(dkimHeader *DKIMHeader, canonicalizedHeaders string, canonicalization Canonicalization) (signatureMessage string, err error) {
-	fromSigned := false
-	if canonicalization == Simple {
-		// todo
-	} else if canonicalization == Relaxed {
-		allHeadersSplit := strings.Split(canonicalizedHeaders, "\r\n")
-		allHeaders := map[string]string{}
-
-		// "The header fields specified by the "h=" tag, in the order specified in that tag, and canonicalized using the header canonicalization algorithm specified in the "c=" tag"
-		for _, header := range allHeadersSplit {
-			headerSplit := strings.SplitN(header, ":", 2)
-			if len(headerSplit) == 2 { // TODO mabye catch this err better
-				allHeaders[headerSplit[0]] = headerSplit[1]
-			}
-		}
-
-		// "The DKIM-Signature header field that exists (verifying) or will be inserted (signing) in the message"
-		dkimHeader.h = append(dkimHeader.h, "dkim-signature")
-		for _, header := range dkimHeader.h {
-			header := strings.ToLower(header)
-			if header == "from" {
-				fromSigned = true
-			}
-			if allHeaders[header] != "" {
-				signatureMessage += header + ":" + allHeaders[header] + "\r\n" // "Each header field MUST be terminated with a single CRLF."
-			}
-		}
-
-		// remove the b tag
-		// "header field are included in the cryptographic hash with the sole exception of the value portion of the "b=""
-		signatureMessage = RgxDkimSigTag.ReplaceAllString(signatureMessage, "b=")
-
-		signatureMessage = strings.TrimSuffix(signatureMessage, "\r\n")
-	} else {
-		err = fmt.Errorf("unknown canonicalization '%#v' when building signature message", canonicalization)
-		return
-	}
-	if !fromSigned {
-		err = fmt.Errorf("from header not included in signature")
 	}
 	return
 }
@@ -117,5 +73,19 @@ func checkSignature(algo SigningAlgorithm,
 	} else {
 		err = fmt.Errorf("unknown public key type '%#v'", publicKeyType)
 	}
+	return
+}
+
+func createSignatureRsaSha256(signatureMessage string, privKey *rsa.PrivateKey) (signature []byte, err error) {
+	signatureMessageHash, err := computeHash(RSASHA256, []byte(signatureMessage))
+	if err != nil {
+		return nil, err
+	}
+
+	signature, err = rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA256, signatureMessageHash)
+	if err != nil {
+		return nil, err
+	}
+
 	return
 }

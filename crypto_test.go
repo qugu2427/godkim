@@ -15,7 +15,29 @@ func TestCheckSignature(t *testing.T) {
 		valid      bool
 	}
 	tests := []test{
-		{ // valid sha256
+		{ // valid rsa+sha1
+			algo:       RSASHA1,
+			pubKeyType: RSA,
+			pubKeyPem: `-----BEGIN PUBLIC KEY-----
+MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALQcfOumlRZI4t1Wuk1rm4x0lDIHd2Lu
+58Lwk5CHq5w+UScq5A104PrXQ4dUL6R8mgTmizNE0oOXXM4nPA0PvysCAwEAAQ==
+-----END PUBLIC KEY-----`,
+			sigMsg: "This is a test.",
+			sigB64: "jGS4/Zl32br/OagvkmSktygbkciuXJOJd4zgeQ6ChJIW5YEa/K8Jj7N1fXwcOJZTu0bVBZk7EOoGcxPrrhVpXw==",
+			valid:  true,
+		},
+		{ // invalid rsa+sha1
+			algo:       RSASHA1,
+			pubKeyType: RSA,
+			pubKeyPem: `-----BEGIN PUBLIC KEY-----
+MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALQcfOumlRZI4t1Wuk1rm4x0lDIHd2Lu
+58Lwk5CHq5w+UScq5A104PrXQ4dUL6R8mgTmizNE0oOXXM4nPA0PvysCAwEAAQ==
+-----END PUBLIC KEY-----`,
+			sigMsg: "This is a test. Modified",
+			sigB64: "jGS4/Zl32br/OagvkmSktygbkciuXJOJd4zgeQ6ChJIW5YEa/K8Jj7N1fXwcOJZTu0bVBZk7EOoGcxPrrhVpXw==",
+			valid:  false,
+		},
+		{ // valid rsa+sha256
 			algo:       RSASHA256,
 			pubKeyType: RSA,
 			pubKeyPem: `-----BEGIN PUBLIC KEY-----
@@ -28,7 +50,7 @@ wJm6cutA66DtZ5QyhwIDAQAB
 			sigB64: "ZqQfbVk2lkvoHmTCaCY/cdJYEKABuCpMeEKIV62rwcirG6hYFDW+YoDqmmjgfTwKA2jqehqnKk+LK+1pJI0OS4V+ecc5bHDozgTs0HVxFq4Bh7N1dtBvGGED4EfVFabVmntjJbt9btsMhg6VJ94rKaJHQZgHosMOjtIZ6TX32Fw=",
 			valid:  true,
 		},
-		{ // invalid msg sha256
+		{ // invalid msg rsa+sha256
 			algo:       RSASHA256,
 			pubKeyType: RSA,
 			pubKeyPem: `-----BEGIN PUBLIC KEY-----

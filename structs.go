@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"time"
 )
@@ -28,6 +29,10 @@ func (d1 DKIMRecord) Equals(d2 DKIMRecord) bool {
 type CanonicalizationTuple struct {
 	headerCanon Canonicalization
 	bodyCanon   Canonicalization
+}
+
+func (c CanonicalizationTuple) String() string {
+	return fmt.Sprintf("%s/%s", c.headerCanon, c.bodyCanon)
 }
 
 type DKIMHeader struct {

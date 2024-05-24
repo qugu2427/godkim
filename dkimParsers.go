@@ -117,12 +117,15 @@ func parseTagsToMap(txt string) (txtMap map[string]string, err error) {
 	return
 }
 
-func parseHeaderList(headerListTxt string) (headerList []string, err error) {
+func parseHeaderList(headerListTxt string, canon Canonicalization) (headerList []string, err error) {
 	usedHeaders := make(map[string]bool)
 	RgxEndColon.ReplaceAllString(headerListTxt, "")
 	headerSplit := strings.Split(headerListTxt, ":")
 	for _, header := range headerSplit {
-		header := RgxNotHeader.ReplaceAllString(header, "")
+		if canon == Relaxed {
+			header = RgxNotHeader.ReplaceAllString(header, "")
+			header = strings.ToLower(header)
+		}
 		if _, exists := usedHeaders[header]; !exists {
 			usedHeaders[header] = true
 			headerList = append(headerList, header)
@@ -205,7 +208,7 @@ func ParseDKIMHeader(txtHeader string) (parsedHeader DKIMHeader, err error) {
 		err = fmt.Errorf("no headers (h) specified in dkim header")
 		return
 	}
-	parsedHeader.h, err = parseHeaderList(h)
+	parsedHeader.h, err = parseHeaderList(h, parsedHeader.c.headerCanon)
 	if err != nil {
 		return
 	}
@@ -303,7 +306,7 @@ func ParseDKIMRecord(txtRecord string) (parsedRecord DKIMRecord, err error) {
 	// TODO: check that this matches a
 	h, exists := txtRecordMap["h"]
 	if exists {
-		parsedRecord.h, err = parseHeaderList(h)
+		parsedRecord.h, err = parseHeaderList(h, Simple) // TODO use different parser
 		if err != nil {
 			return
 		}

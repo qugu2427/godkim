@@ -7,12 +7,16 @@ import (
 	"time"
 )
 
-// The max number of signatures Verify() will verify
-var SignatureLimit int = 4
+var (
+	SignatureLimit  int  = 4    // The max number of signatures Verify() will verify
+	CheckExpiration bool = true // Whether or not the check the expiration date on signatures
+)
 
 // Checks that the agent (i=) is a subdomain or matches domain
 func (d *DKIMHeader) VerifyAgent(dkimRecord DKIMRecord) (err error) {
-	if strings.Contains(dkimRecord.t, "s") && !strings.HasSuffix(d.i, "@"+d.d) {
+	if d.i == "" {
+		return
+	} else if strings.Contains(dkimRecord.t, "s") && !strings.HasSuffix(d.i, "@"+d.d) {
 		err = fmt.Errorf("agent %s (i) does not end in %s (strict match per t=s)", d.i, "@"+d.d)
 	} else if !strings.HasSuffix(d.i, d.d) {
 		err = fmt.Errorf("agent %s (i) does not end in %s, d.i, d.d)", d.i, d.d)
@@ -31,7 +35,7 @@ func (d *DKIMHeader) VerifyTimestamp() (err error) {
 
 // Check that the dkim expiration (x=) is not in the past. If no expiration is specified, no error will be returned since it is not a required tag.
 func (d *DKIMHeader) VerifyExpiration() (err error) {
-	if !d.x.IsZero() && time.Now().After(d.x) {
+	if !d.x.IsZero() && time.Now().After(d.x) && CheckExpiration {
 		err = fmt.Errorf("dkim header expired")
 		return
 	}
@@ -66,7 +70,7 @@ func (d *DKIMHeader) VerifyBodyHash(canonicalizedBody string) (err error) {
 
 // Check that the signature (b=) matches the computed signature of headers
 func (d *DKIMHeader) VerifySignature(dkimRecord DKIMRecord, canonicalizedHeaders string) (err error) {
-	signatureMessage, err := buildSignatureMessage(d, canonicalizedHeaders, d.c.headerCanon)
+	signatureMessage, err := extractSignatureMessage(d, canonicalizedHeaders)
 	if err != nil {
 		return err
 	}
@@ -83,9 +87,13 @@ type VerifyResult struct {
 	Domain string
 }
 
+func (v VerifyResult) String() string {
+	return fmt.Sprintf("{%s,\"%s\",%s}", v.Result, v.Err, v.Domain)
+}
+
 func Verify(rawMail string) (results []VerifyResult, err error) {
 	var dkimHeaders []DKIMHeader
-	dkimHeaders, err = extractDKIMHeaders(rawEmail)
+	dkimHeaders, err = extractDKIMHeaders(rawMail)
 	if err != nil {
 		return nil, err
 	}
@@ -93,59 +101,68 @@ func Verify(rawMail string) (results []VerifyResult, err error) {
 		return nil, fmt.Errorf("too many signatures (%d) in mail, limit is %d", len(dkimHeaders), SignatureLimit)
 	}
 
-	for _, dkimHeader := range dkimHeaders {
-		var result VerifyResult
-		result.Domain = dkimHeader.d
+	overallSuccess := true
+	for i, dkimHeader := range dkimHeaders {
+		results = append(results, VerifyResult{Success, nil, dkimHeader.d})
 
 		var dkimRecord DKIMRecord
-		dkimRecord, err = fetchDKIMRecord(dkimHeader.s, dkimHeader.d)
-		if err != nil {
-			result.Err = err
-			result.Result = TempFail
+		dkimRecord, results[i].Err = fetchDKIMRecord(dkimHeader.s, dkimHeader.d)
+		if results[i].Err != nil {
+			results[i].Result = TempFail
+			overallSuccess = false
+			continue
 		}
 
 		// Check agent
-		err = dkimHeader.VerifyAgent(dkimRecord)
-		if err != nil {
-			result.Err = err
-			result.Result = PermFail
+		results[i].Err = dkimHeader.VerifyAgent(dkimRecord)
+		if results[i].Err != nil {
+			results[i].Result = PermFail
+			overallSuccess = false
+			continue
 		}
 
 		// Check timestamp and expiration
-		err = dkimHeader.VerifyTimestamp()
-		if err != nil {
-			result.Err = err
-			result.Result = PermFail
+		results[i].Err = dkimHeader.VerifyTimestamp()
+		if results[i].Err != nil {
+			results[i].Result = PermFail
+			overallSuccess = false
+			continue
 		}
-		err = dkimHeader.VerifyExpiration()
-		if err != nil {
-			result.Err = err
-			result.Result = PermFail
+		results[i].Err = dkimHeader.VerifyExpiration()
+		if results[i].Err != nil {
+			results[i].Result = PermFail
+			overallSuccess = false
+			continue
 		}
 
 		// Canonicalize email
 		var headersCanonicalized, bodyCanonicalized string
-		headersCanonicalized, bodyCanonicalized, err = CanonicalizeEmail(dkimHeader.c, rawEmail)
-		if err != nil {
-			result.Err = err
-			result.Result = PermFail
+		headersCanonicalized, bodyCanonicalized, results[i].Err = CanonicalizeEmail(dkimHeader.c, rawMail)
+		if results[i].Err != nil {
+			results[i].Result = PermFail
+			overallSuccess = false
+			continue
 		}
 
 		// Check body hash
-		err = dkimHeader.VerifyBodyHash(bodyCanonicalized)
-		if err != nil {
-			result.Err = err
-			result.Result = PermFail
+		results[i].Err = dkimHeader.VerifyBodyHash(bodyCanonicalized)
+		if results[i].Err != nil {
+			results[i].Result = PermFail
+			overallSuccess = false
+			continue
 		}
 
 		// Check signature
-		err = dkimHeader.VerifySignature(dkimRecord, headersCanonicalized)
-		if err != nil {
-			result.Err = err
-			result.Result = PermFail
+		results[i].Err = dkimHeader.VerifySignature(dkimRecord, headersCanonicalized)
+		if results[i].Err != nil {
+			results[i].Result = PermFail
+			overallSuccess = false
+			continue
 		}
+	}
 
-		results = append(results, result)
+	if !overallSuccess {
+		err = fmt.Errorf("one or more failed signatures")
 	}
 
 	return

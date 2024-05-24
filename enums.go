@@ -31,9 +31,9 @@ const (
 func (s SigningAlgorithm) String() string {
 	switch s {
 	case RSASHA1:
-		return "RSASHA1"
+		return "rsa-sha1"
 	case RSASHA256:
-		return "RSASHA256"
+		return "rsa-sha256"
 	default:
 		panic("unknown signing algorithm")
 	}
@@ -49,9 +49,9 @@ const (
 func (c Canonicalization) String() string {
 	switch c {
 	case Simple:
-		return "Simple"
+		return "simple"
 	case Relaxed:
-		return "Relaxed"
+		return "relaxed"
 	default:
 		panic("unknown canonicalization")
 	}
