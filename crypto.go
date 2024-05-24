@@ -76,13 +76,24 @@ func checkSignature(algo SigningAlgorithm,
 	return
 }
 
-func createSignatureRsaSha256(signatureMessage string, privKey *rsa.PrivateKey) (signature []byte, err error) {
+func createSignatureRsaSha256(signatureMessage string, privKeyPem string) (signature []byte, err error) {
+	block, _ := pem.Decode([]byte(privKeyPem))
+	if block == nil || block.Type != "RSA PRIVATE KEY" {
+		return nil, fmt.Errorf("failed to decode PEM block containing the key")
+	}
+
+	var privateKey *rsa.PrivateKey
+	privateKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return
+	}
+
 	signatureMessageHash, err := computeHash(RSASHA256, []byte(signatureMessage))
 	if err != nil {
 		return nil, err
 	}
 
-	signature, err = rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA256, signatureMessageHash)
+	signature, err = rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, signatureMessageHash)
 	if err != nil {
 		return nil, err
 	}

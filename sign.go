@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
 	"strings"
@@ -12,7 +11,7 @@ type SignPayload struct {
 	Domain     string
 	Selector   string
 	Headers    []string
-	PrivateKey *rsa.PrivateKey
+	PrivateKey string
 }
 
 func (p SignPayload) Sign() (signedMail string, err error) {
@@ -41,7 +40,7 @@ func (p SignPayload) Sign() (signedMail string, err error) {
 		return
 	}
 
-	signatueMessage += fmt.Sprintf("dkim-signature: v=1 a=rsa-sha256 c=relaxed/relaxed d=%s s=%s h=%s bh=%s b=",
+	signatueMessage += fmt.Sprintf("dkim-signature:v=1; a=rsa-sha256; c=relaxed/relaxed; d=%s; s=%s; h=%s; bh=%s; b=",
 		p.Domain,
 		p.Selector,
 		strings.Join(p.Headers, ":"),

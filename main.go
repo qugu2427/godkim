@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 // const testDkimHeader string = `v=1; a=rsa-sha256;
 // d=example.com; s=big-email;
 // h=from:to:subject;
@@ -27,19 +23,19 @@ const unsignedEmail string = "MIME-Version: 1.0\r\nDate: Fri, 24 May 2024 10:19:
 func main() {
 	// fmt.Println(rawEmail)
 
-	signPayload := SignPayload{
-		unsignedEmail,
-		"example.org",
-		"dkim",
-		[]string{"From", "To"},
-		nil,
-	}
-	signedEmail, err := signPayload.Sign()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("%#v\n", signedEmail)
-	fmt.Println(Verify(signedEmail))
+	// signPayload := SignPayload{
+	// 	unsignedEmail,
+	// 	"example.org",
+	// 	"dkim",
+	// 	[]string{"From", "To"},
+	// 	nil,
+	// }
+	// signedEmail, err := signPayload.Sign()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Printf("%#v\n", signedEmail)
+	// fmt.Println(Verify(signedEmail))
 
 	// fmt.Println(Verify(rawEmail))
 
