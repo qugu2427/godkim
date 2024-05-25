@@ -1,4 +1,4 @@
-package main
+package dkim
 
 import (
 	"encoding/base64"

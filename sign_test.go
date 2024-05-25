@@ -1,9 +1,10 @@
-package main
+package dkim
 
 import (
 	"fmt"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/foxcpp/go-mockdns"
 )
@@ -44,9 +45,41 @@ Fl1FBwbvEE36bmwARayL0xAFxNrtfR6HbuUyEqIQqQ==
 				"example.org",
 				"dkim",
 				DefaultHeaders,
+				Relaxed,
+				Relaxed,
+				time.Now().Unix(),
+				time.Now().Add(1 * time.Hour).Unix(),
 				exampleOrgPrivKey,
 			},
 			true,
+		},
+		{ // very basic valid message (simple canon)
+			SignPayload{
+				"MIME-Version: 1.0\r\nDate: Fri, 24 May 2024 10:19:18 -0600\r\nReply-To: John.Doe@example.org\r\nSubject: Test Email\r\nFrom: John Doe <John.Doe@example.org>\r\nTo: alice@colorado.edu\r\nContent-Type: multipart/alternative; boundary=\"00000000000095c7110619358760\"\r\n\r\n--00000000000095c7110619358760\r\nContent-Type: text/plain; charset=\"UTF-8\"\r\n\r\nthis is a test email\r\n\r\n--00000000000095c7110619358760\r\nContent-Type: text/html; charset=\"UTF-8\"\r\n\r\n<div dir=\"ltr\">this is a test email</div>\r\n\r\n--00000000000095c7110619358760--",
+				"example.org",
+				"dkim",
+				DefaultHeaders,
+				Simple,
+				Simple,
+				time.Now().Unix(),
+				time.Now().Add(1 * time.Hour).Unix(),
+				exampleOrgPrivKey,
+			},
+			true,
+		},
+		{ // expired message (simple canon)
+			SignPayload{
+				"MIME-Version: 1.0\r\nDate: Fri, 24 May 2024 10:19:18 -0600\r\nReply-To: John.Doe@example.org\r\nSubject: Test Email\r\nFrom: John Doe <John.Doe@example.org>\r\nTo: alice@colorado.edu\r\nContent-Type: multipart/alternative; boundary=\"00000000000095c7110619358760\"\r\n\r\n--00000000000095c7110619358760\r\nContent-Type: text/plain; charset=\"UTF-8\"\r\n\r\nthis is a test email\r\n\r\n--00000000000095c7110619358760\r\nContent-Type: text/html; charset=\"UTF-8\"\r\n\r\n<div dir=\"ltr\">this is a test email</div>\r\n\r\n--00000000000095c7110619358760--",
+				"example.org",
+				"dkim",
+				DefaultHeaders,
+				Relaxed,
+				Relaxed,
+				time.Now().Unix(),
+				time.Now().Add(-1 * time.Hour).Unix(),
+				exampleOrgPrivKey,
+			},
+			false,
 		},
 	}
 

@@ -1,19 +1,39 @@
-package main
+package dkim
 
 import (
 	"encoding/base64"
 	"fmt"
 	"strings"
+	"time"
 )
 
 var DefaultHeaders []string = []string{"From", "To", "Subject", "Date", "Cc", "Reply-To", "Message-ID"}
 
 type SignPayload struct {
-	RawMail    string
-	Domain     string
-	Selector   string
-	Headers    []string
-	PrivateKey string
+	RawMail      string
+	Domain       string
+	Selector     string
+	Headers      []string
+	HeadersCanon Canonicalization
+	BodyCanon    Canonicalization
+	Timestamp    int64
+	Expiration   int64
+	PrivateKey   string
+}
+
+func SimpleSign(rawMail, domain, selector, privateKeyPem string) (signedMail string, err error) {
+	signPayload := SignPayload{
+		RawMail:      rawMail,
+		Domain:       domain,
+		Selector:     selector,
+		Headers:      DefaultHeaders,
+		HeadersCanon: Relaxed,
+		BodyCanon:    Relaxed,
+		Timestamp:    time.Now().Unix(),
+		Expiration:   time.Now().Add(48 * time.Hour).Unix(),
+		PrivateKey:   privateKeyPem,
+	}
+	return signPayload.Sign()
 }
 
 func (p SignPayload) Sign() (signedMail string, err error) {
@@ -21,7 +41,9 @@ func (p SignPayload) Sign() (signedMail string, err error) {
 		p.Headers[i] = strings.ToLower(p.Headers[i])
 	}
 
-	canonicalizedHeaders, canonicalizedBody, err := CanonicalizeEmail(CanonicalizationTuple{Relaxed, Relaxed}, p.RawMail)
+	canonTuple := CanonicalizationTuple{p.HeadersCanon, p.BodyCanon}
+
+	canonicalizedHeaders, canonicalizedBody, err := CanonicalizeEmail(canonTuple, p.RawMail)
 	if err != nil {
 		return
 	}
@@ -34,7 +56,7 @@ func (p SignPayload) Sign() (signedMail string, err error) {
 	signatueMessage, err := extractSignatureMessage(&DKIMHeader{
 		a:  RSASHA256,
 		bh: bodyHash,
-		c:  CanonicalizationTuple{Relaxed, Relaxed},
+		c:  canonTuple,
 		d:  p.Domain,
 		h:  p.Headers,
 	}, canonicalizedHeaders+"\r\n")
@@ -42,11 +64,25 @@ func (p SignPayload) Sign() (signedMail string, err error) {
 		return
 	}
 
-	signatueMessage += fmt.Sprintf("dkim-signature:v=1; a=rsa-sha256; c=relaxed/relaxed; d=%s; s=%s; h=%s; bh=%s; b=",
-		p.Domain,
-		p.Selector,
-		strings.Join(p.Headers, ":"),
-		base64.StdEncoding.EncodeToString(bodyHash))
+	if p.HeadersCanon == Relaxed {
+		signatueMessage += fmt.Sprintf("dkim-signature:v=1; a=rsa-sha256; t=%d; x=%d; c=%s; d=%s; s=%s; h=%s; bh=%s; b=",
+			p.Timestamp,
+			p.Expiration,
+			canonTuple,
+			p.Domain,
+			p.Selector,
+			strings.Join(p.Headers, ":"),
+			base64.StdEncoding.EncodeToString(bodyHash))
+	} else {
+		signatueMessage += fmt.Sprintf("DKIM-Signature: v=1; a=rsa-sha256; t=%d; x=%d; c=%s; d=%s; s=%s; h=%s; bh=%s; b=",
+			p.Timestamp,
+			p.Expiration,
+			canonTuple,
+			p.Domain,
+			p.Selector,
+			strings.Join(p.Headers, ":"),
+			base64.StdEncoding.EncodeToString(bodyHash))
+	}
 
 	fmt.Printf("%#v", signatueMessage)
 
@@ -55,7 +91,10 @@ func (p SignPayload) Sign() (signedMail string, err error) {
 		return
 	}
 
-	signedMail = fmt.Sprintf("DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=%s; s=%s; h=%s; bh=%s; b=%s\r\n",
+	signedMail = fmt.Sprintf("DKIM-Signature: v=1; a=rsa-sha256; t=%d; x=%d; c=%s; d=%s; s=%s; h=%s; bh=%s; b=%s\r\n",
+		p.Timestamp,
+		p.Expiration,
+		canonTuple,
 		p.Domain,
 		p.Selector,
 		strings.Join(p.Headers, ":"),

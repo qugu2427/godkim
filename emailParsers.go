@@ -1,4 +1,4 @@
-package main
+package dkim
 
 import (
 	"fmt"
@@ -148,9 +148,6 @@ func CanonicalizeEmail(canonTuple CanonicalizationTuple, rawEmail string) (canon
 		for headerKey, headerVals := range headers {
 			for _, headerVal := range headerVals {
 				canonicalizedHeader += headerKey + ":" + headerVal + "\r\n"
-				// if !strings.HasSuffix(canonicalizedHeader, "\r\n") {
-				// 	canonicalizedHeader += "\r\n"
-				// }
 			}
 		}
 	} else if canonTuple.headerCanon == Relaxed {
@@ -188,6 +185,7 @@ func CanonicalizeEmail(canonTuple CanonicalizationTuple, rawEmail string) (canon
 	}
 	if canonTuple.bodyCanon == Simple {
 		// "...ignores all empty lines at the end of the message body"
+		// "... converts "*CRLF" at the end of the body to a single "CRLF""
 		canonicalizedBody = RgxConsecEndingCRLF.ReplaceAllString(body, "\r\n")
 	} else if canonTuple.bodyCanon == Relaxed {
 
@@ -204,7 +202,6 @@ func CanonicalizeEmail(canonTuple CanonicalizationTuple, rawEmail string) (canon
 		}
 	} else {
 		err = fmt.Errorf("unknown body canonicalization '%#v'", canonTuple.bodyCanon)
-		return
 	}
 
 	return

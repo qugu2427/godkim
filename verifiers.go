@@ -1,4 +1,4 @@
-package main
+package dkim
 
 import (
 	"fmt"
@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	SignatureLimit  int  = 4     // The max number of signatures Verify() will verify
-	CheckExpiration bool = false // Whether or not the check the expiration date on signatures
+	SignatureLimit  int  = 4    // The max number of signatures Verify() will verify
+	CheckExpiration bool = true // Whether or not the check the expiration date on signatures
 )
 
 // Checks that the agent (i=) is a subdomain or matches domain
@@ -44,10 +44,6 @@ func (d *DKIMHeader) VerifyExpiration() (err error) {
 
 // Check that the dkim body hash (bh=) matches the hash of the *canonicalized* body
 func (d *DKIMHeader) VerifyBodyHash(canonicalizedBody string) (err error) {
-	if !strings.HasSuffix(canonicalizedBody, "\r\n") {
-		canonicalizedBody += "\r\n"
-	}
-
 	// "canonicalized using the body canonicalization algorithm specified in the "c=" tag and then truncated to the length specified in the "l=" tag"
 	if d.l > len(canonicalizedBody) {
 		err = fmt.Errorf("body length count larger than canonicalized body")

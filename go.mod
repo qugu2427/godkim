@@ -1,4 +1,4 @@
-module test
+module dkim
 
 go 1.18
 
