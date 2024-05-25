@@ -84,8 +84,6 @@ func (p SignPayload) Sign() (signedMail string, err error) {
 			base64.StdEncoding.EncodeToString(bodyHash))
 	}
 
-	fmt.Printf("%#v", signatueMessage)
-
 	signature, err := createSignatureRsaSha256(signatueMessage, p.PrivateKey)
 	if err != nil {
 		return

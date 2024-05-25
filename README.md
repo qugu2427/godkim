@@ -1,6 +1,5 @@
 # GoDKIM
-A go module for verifying email with DKIM as described by RFC 6376.
-**WORK IN PROGRESS**
+A go module for verifying email with DKIM as described by [rfc 6376](https://datatracker.ietf.org/doc/html/rfc6376).
 
 ## Verify
 `Verify(rawMail string)` returns a slice of verifications results with one result for each signature. Verify also returns an error when verification has failed.
@@ -15,7 +14,7 @@ func main() {
     The email must be in its completely raw form!
     (including \r \n \t etc)
     */
-    rawEmail := ""
+    rawEmail := "MIME-Version: 1.0\r\nDate: Fri, 24 May 2024 10:19:18 -0600\r\nReply-To: John.Doe@example.org\r\nSubject: Test Email\r\nFrom: John Doe <John.Doe@example.org>\r\nTo: alice@colorado.edu\r\nContent-Type: multipart/alternative; boundary=\"00000000000095c7110619358760\"\r\n\r\n--00000000000095c7110619358760\r\nContent-Type: text/plain; charset=\"UTF-8\"\r\n\r\nthis is a test email\r\n\r\n--00000000000095c7110619358760\r\nContent-Type: text/html; charset=\"UTF-8\"\r\n\r\n<div dir=\"ltr\">this is a test email</div>\r\n\r\n--00000000000095c7110619358760--"
     
     results, err := dkim.Verify(rawEmail)
     if err != nil {
@@ -39,7 +38,7 @@ v=DKIM1; k=rsa; p=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALQcfOumlRZI4t1Wuk1rm4x0lDIHd2
 ```go
 package main
 
-rawMail := ""
+rawMail := "MIME-Version: 1.0\r\nDate: Fri, 24 May 2024 10:19:18 -0600\r\nReply-To: John.Doe@example.org\r\nSubject: Test Email\r\nFrom: John Doe <John.Doe@example.org>\r\nTo: alice@colorado.edu\r\nContent-Type: multipart/alternative; boundary=\"00000000000095c7110619358760\"\r\n\r\n--00000000000095c7110619358760\r\nContent-Type: text/plain; charset=\"UTF-8\"\r\n\r\nthis is a test email\r\n\r\n--00000000000095c7110619358760\r\nContent-Type: text/html; charset=\"UTF-8\"\r\n\r\n<div dir=\"ltr\">this is a test email</div>\r\n\r\n--00000000000095c7110619358760--"
 
 // Note: key must be in valid pksc pem format
 exampleOrgKey := `-----BEGIN RSA PRIVATE KEY-----
