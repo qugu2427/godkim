@@ -303,13 +303,9 @@ func ParseDKIMRecord(txtRecord string) (parsedRecord DKIMRecord, err error) {
 	}
 
 	// Acceptable hash algos (h)
-	// TODO: check that this matches a
 	h, exists := txtRecordMap["h"]
 	if exists {
-		parsedRecord.h, err = parseHeaderList(h, Simple) // TODO use different parser
-		if err != nil {
-			return
-		}
+		parsedRecord.h = strings.Split(h, ":")
 	}
 
 	// Key type (k)

@@ -96,7 +96,7 @@ fmt.Printf("%#v\n", signedMail)
 ## Support
 The following can be checked by `Verify()`, but cannot be used in signing:
  - `rsa-sha1` signing algorithm (obsolete for signing)
- - Patial Signing `l=` (insecure)
+ - Partial Signing `l=` (insecure)
  - Agent `i=` (havent gotten around to it)
 
 The following is not supported:

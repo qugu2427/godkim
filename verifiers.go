@@ -12,6 +12,20 @@ var (
 	CheckExpiration bool = true // Whether or not the check the expiration date on signatures
 )
 
+// Checks that signing algo (a=) is allowed given hash algos (h=)
+func (d *DKIMHeader) VerifyHashAlgo(dkimRecord DKIMRecord) (err error) {
+	if dkimRecord.h == nil {
+		return
+	}
+	for _, hashAlgo := range dkimRecord.h {
+		if (d.a == RSASHA1 && hashAlgo == "sha1") ||
+			(d.a == RSASHA256 && hashAlgo == "sha256") {
+			return
+		}
+	}
+	return fmt.Errorf("unacceptable hash algorithm")
+}
+
 // Checks that the agent (i=) is a subdomain or matches domain
 func (d *DKIMHeader) VerifyAgent(dkimRecord DKIMRecord) (err error) {
 	if d.i == "" {
@@ -105,6 +119,14 @@ func Verify(rawMail string) (results []VerifyResult, err error) {
 		dkimRecord, results[i].Err = fetchDKIMRecord(dkimHeader.s, dkimHeader.d)
 		if results[i].Err != nil {
 			results[i].Result = TempFail
+			overallSuccess = false
+			continue
+		}
+
+		// Check hash algos
+		results[i].Err = dkimHeader.VerifyHashAlgo(dkimRecord)
+		if results[i].Err != nil {
+			results[i].Result = PermFail
 			overallSuccess = false
 			continue
 		}
