@@ -1,4 +1,6 @@
 # GoDKIM
+![Test](https://github.com/qugu2427/godkim/actions/workflows/test.yml/badge.svg)
+
 A go module for verifying email with DKIM as described by [rfc 6376](https://datatracker.ietf.org/doc/html/rfc6376).
 
 ## Verify

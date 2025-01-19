@@ -1,9 +1,10 @@
 module dkim
 
-go 1.18
+go 1.23.4
+
+require github.com/foxcpp/go-mockdns v1.1.0
 
 require (
-	github.com/foxcpp/go-mockdns v1.1.0 // indirect
 	github.com/miekg/dns v1.1.57 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
